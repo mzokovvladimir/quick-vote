@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Голосування</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            padding: 20px;
+            background-color: #f4f4f4;
+        }
+
+        h2 {
+            text-align: center;
+        }
+
+        form {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+            background: white;
+            padding: 15px;
+            border-radius: 5px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            max-width: 400px;
+            margin: 0 auto;
+        }
+
+        input, button {
+            padding: 10px;
+            width: 80%;
+        }
+
+        #results {
+            margin-top: 20px;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+
+<h2>Система голосування</h2>
+
+<!-- Форма для додавання варіанта -->
+<form id="addOptionForm">
+    <input type="text" id="optionText" placeholder="Введіть варіант" required>
+    <button type="submit">Додати варіант</button>
+</form>
+
+<!-- Форма для голосування -->
+<form id="voteForm">
+    <input type="number" id="voteId" placeholder="Введіть ID варіанта" required>
+    <button type="submit">Голосувати</button>
+</form>
+
+<!-- Блок з результатами голосування -->
+<div id="results">
+    <h3>Результаты:</h3>
+    <ul id="resultsList"></ul>
+</div>
+
+<script>
+    // Функція завантаження результатів голосування
+    async function loadResults() {
+        const response = await fetch('/api/results');
+        const data = await response.json();
+        const resultsList = document.getElementById('resultsList');
+        resultsList.innerHTML = '';
+
+        for (const id in data) {
+            const li = document.createElement('li');
+            li.textContent = `ID ${id}: ${data[id].text} - ${data[id].votes} голосів`;
+            resultsList.appendChild(li);
+        }
+    }
+
+    // Додавання нового варіанта голосування
+    document.getElementById('addOptionForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const optionText = document.getElementById('optionText').value.trim();
+        if (!optionText) return;
+
+        const response = await fetch('/api/add-option', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({text: optionText})
+        });
+
+        const data = await response.json();
+        alert(data.message);
+        loadResults();
+        document.getElementById('optionText').value = '';
+    });
+
+    // Голосование
+    document.getElementById('voteForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const voteId = parseInt(document.getElementById('voteId').value, 10);
+        if (isNaN(voteId)) {
+            alert("Введіть коректний ID варіанта!");
+            return;
+        }
+
+        const response = await fetch('/api/vote', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({voteId})
+        });
+
+        const data = await response.json();
+        alert(data.message || "Помилка під час голосування");
+        loadResults();
+    });
+
+    // Завантаження результатів на старті
+    loadResults();
+</script>
+
+</body>
+</html>
